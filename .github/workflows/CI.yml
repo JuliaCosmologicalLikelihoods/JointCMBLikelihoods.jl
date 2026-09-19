@@ -1,0 +1,146 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ['*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    # The suite downloads five Zenodo artifacts (~725 MB) and builds a large
+    # prepared Mooncake tape; a clean runner takes far longer than the tests.
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['1.10', '1.11', '1.12']
+        os: [ubuntu-latest]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.version }}
+          arch: x64
+
+      # Caching may only make the build faster, never change a result: every
+      # artifact is content-addressed by its tree hash, so a stale or corrupt
+      # cache entry is rejected and re-downloaded rather than used.
+      - uses: julia-actions/cache@v2
+        with:
+          cache-name: ${{ matrix.version }}
+
+      # Julia 1.10 does not understand `[sources]`. Install the pinned
+      # CMBForegrounds tag explicitly so 1.10 resolves exactly what 1.11/1.12
+      # resolve recursively.
+      - name: Bootstrap CMBForegrounds v0.4.1 (Julia 1.10 only)
+        if: matrix.version == '1.10'
+        run: |
+          julia --project=. -e '
+            using Pkg
+            Pkg.add(url="https://github.com/JuliaCosmologicalLikelihoods/CMBForegrounds.jl",
+                    rev="v0.4.1")
+          '
+
+      - name: Instantiate
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
+      # Prove which CMBForegrounds source was resolved, on every version.
+      - name: Package status
+        run: |
+          julia --project=. -e '
+            using Pkg
+            Pkg.status()
+            Pkg.status(; mode = Pkg.PKGMODE_MANIFEST)
+          '
+
+      # All five artifacts must resolve by download alone, outside the test
+      # environment. Until every one was published this step was impossible;
+      # it is the proof that a clean clone is usable.
+      - name: All five artifacts resolve outside the test environment
+        run: |
+          julia --project=. -e '
+            using JointCMBLikelihoods
+            planck = load_planck_data()
+            act    = load_act_data()
+            spt    = load_spt_data()
+            tpl    = load_shared_templates()
+            println("planck ", length(planck.data_vector),
+                    "  act ", length(act.data_vector),
+                    "  spt ", length(spt.data_vector))
+            @assert length(planck.data_vector) == 4872
+            @assert length(act.data_vector)    == 1139
+            @assert length(spt.data_vector)    == 1392
+            @assert size(spt.inv_cov) == (1392, 1392)
+            println("all runtime artifacts resolved")
+          '
+
+      # No environment gates and no filtered test sets: the whole suite runs,
+      # including both package extensions and the full AD battery.
+      - uses: julia-actions/julia-runtest@v1
+
+      - uses: julia-actions/julia-processcoverage@v1
+      - uses: codecov/codecov-action@v5
+        with:
+          files: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+  hygiene:
+    name: Repository hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      # Every reference fixture lives in the published joint_cmb_fixtures
+      # artifact (doi:10.5281/zenodo.22840060). Bulk data, archives and
+      # resolved manifests never belong in git.
+      - name: Reject bulk data, archives and manifests
+        run: |
+          set -euo pipefail
+          offenders=$(git ls-files \
+            '*.npy' '*.npz' '*.fits' '*.fits.gz' '*.h5' '*.hdf5' '*.pkl' \
+            '*.tar' '*.tar.gz' '*.tar.xz' '*.tgz' '*.zip' \
+            'Manifest.toml' '**/Manifest.toml' \
+            'data/**' '**/__pycache__/**' || true)
+          if [ -n "$offenders" ]; then
+            echo "these must not be committed:"; echo "$offenders"; exit 1
+          fi
+          echo "no bulk data products or manifests are tracked"
+
+      - name: No large tracked files
+        run: |
+          set -euo pipefail
+          large=$(git ls-files -z | xargs -0 -I{} sh -c 'test -f "{}" && [ $(stat -c%s "{}") -gt 1048576 ] && echo "{} $(stat -c%s "{}")"' || true)
+          if [ -n "$large" ]; then
+            echo "tracked files larger than 1 MiB:"; echo "$large"; exit 1
+          fi
+          echo "no tracked file exceeds 1 MiB"
+
+      # The fixture-generation provenance must stay in the repository: these
+      # scripts, and the hillik commit they name, are the only record of how
+      # the frozen reference values were produced.
+      - name: Fixture provenance is present
+        run: |
+          set -euo pipefail
+          for f in validation/export_fixtures.py validation/export_full.py \
+                   validation/convert_planck_data.py validation/convert_act_data.py \
+                   validation/convert_shared_templates.py; do
+            test -f "$f" || { echo "missing provenance script: $f"; exit 1; }
+          done
+          grep -q "mtristram/hillik @" validation/export_fixtures.py \
+            || { echo "reference commit no longer recorded"; exit 1; }
+          echo "fixture provenance present"

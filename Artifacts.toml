@@ -1,0 +1,61 @@
+# JointCMBLikelihoods data artifacts.
+# Converted release data for the joint Planck PR4 + ACT DR6 + SPT-3G D1
+# likelihood (arXiv:2511.04733). Download URLs live only here.
+#
+# Archives are .tar.xz (Zenodo convention), with the contents at the archive
+# ROOT: Julia hashes the extracted tree, so a wrapping top-level directory
+# changes the hash and fails the integrity check. Tree hashes computed over the
+# uncompressed tarball (Tar.tree_hash).
+#
+# STATUS: all five artifacts are published and each has been resolved from a
+# clean depot against its live URL. The three re-archived in September 2026 kept
+# their original `git-tree-sha1` (content-derived) but carry new `sha256` values,
+# because their first archives no longer existed and tar/xz cannot reproduce a
+# file byte for byte.
+
+# Published: https://doi.org/10.5281/zenodo.22840060 (record 22840060).
+# Concept DOI 10.5281/zenodo.22840059 always resolves to the latest version.
+# Frozen reference fixtures for the test suite. The unreferenced `invkll` array
+# (20 identical 90.55 MiB copies) was removed before archiving; it is regenerable
+# with validation/convert_planck_data.py.
+[joint_cmb_fixtures]
+git-tree-sha1 = "45fdf29c60d200dc556e416f7b30d9d11e11ab35"
+
+    [[joint_cmb_fixtures.download]]
+    url = "https://zenodo.org/records/22840060/files/JointCMB_fixtures_v1_20260919.tar.xz"
+    sha256 = "e2c0ab6f41fbb0500469555660619bc98ce05bd55fce7530882f011eb3371736"
+
+[joint_planck_data]
+git-tree-sha1 = "5be0b9a5712c98bb9b57030960fadcd0998ab728"
+
+    # Published: https://doi.org/10.5281/zenodo.22845832 (record 22845832).
+    [[joint_planck_data.download]]
+    url = "https://zenodo.org/records/22845832/files/JointCMB_planck_v1_20260919.tar.xz"
+    sha256 = "11062500621b1b019320289a0ccb8e4830fb4ce4d3ed011ac8b2c55830df8855"
+
+[joint_act_data]
+git-tree-sha1 = "4bd921ddae316c8a0f11f559363cb14a1fc86f18"
+
+    # Published: https://doi.org/10.5281/zenodo.22845836 (record 22845836).
+    [[joint_act_data.download]]
+    url = "https://zenodo.org/records/22845836/files/JointCMB_act_v1_20260919.tar.xz"
+    sha256 = "a7448bcd3051a5400b0dfe8c13308bc842ca923a317af41487f29d168449fd31"
+
+[joint_spt_data]
+git-tree-sha1 = "e166eed00f35ada69a1f5b6ffb12e853704c49c0"
+
+    # Published: https://doi.org/10.5281/zenodo.22818351 (record 22818351), the
+    # SPTLikelihoods.jl release. Its extracted tree hash equals the one above
+    # exactly, so one record serves both packages. The previous sha256 here
+    # belonged to a differently-named archive that no longer exists.
+    [[joint_spt_data.download]]
+    url = "https://zenodo.org/records/22818351/files/SPT3G_D1_TnE_v0_20260917.tar.xz"
+    sha256 = "2eeabff94fc43c3989bbd57a9328dd3ca097fec3e5123b579fec76dbd587ad6d"
+
+[joint_fg_templates]
+git-tree-sha1 = "752ac309201dc2261a2a8f2034731ee3404ff521"
+
+    # Published: https://doi.org/10.5281/zenodo.22845838 (record 22845838).
+    [[joint_fg_templates.download]]
+    url = "https://zenodo.org/records/22845838/files/JointCMB_fg_templates_v1_20260919.tar.xz"
+    sha256 = "509bf0f495b4f79242507da4a950b8aef88839f838b7228e071c03614d629a7e"
