@@ -6,6 +6,11 @@ using JSON
 using Artifacts
 using CMBForegrounds: window_convolution, _fixed_beam_product, _fixed_chromatic_ratio,
     assemble_TT, assemble_TE, assemble_EE
+# `loglikelihood` is extended from StatsAPI rather than defined here.
+# Distributions, StatsBase, DynamicPPL and Turing all extend that same binding,
+# so defining a rival one makes `using JointCMBLikelihoods, Turing` ambiguous.
+# StatsAPI has no dependencies of its own.
+import StatsAPI: loglikelihood
 
 export JointCMBTheory,
     theory_at,

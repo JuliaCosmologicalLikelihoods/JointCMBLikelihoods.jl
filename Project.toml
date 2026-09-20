@@ -9,6 +9,7 @@ CMBForegrounds = "fc0df5e6-91e0-40ab-a79d-ad91d7e99724"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 NPZ = "15e1cf62-19b3-5cfa-8e77-841668bca605"
+StatsAPI = "82ae8749-77ed-4fe6-ae5f-f523153014b0"
 
 [sources]
 CMBForegrounds = {url = "https://github.com/JuliaCosmologicalLikelihoods/CMBForegrounds.jl", rev = "v0.4.1"}
@@ -29,6 +30,7 @@ JSON = "0.21"
 LinearAlgebra = "1"
 Mooncake = "0.5"
 NPZ = "0.4.3"
+StatsAPI = "1"
 julia = "1.10"
 
 [extras]
